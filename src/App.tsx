@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RotateCcw, Trophy, X, ChevronRight, Crown, History, UserPlus, Check } from 'lucide-react';
+import { RotateCcw, Trophy, X, ChevronRight, Crown, History, UserPlus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Player, Match } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -34,12 +34,46 @@ const Logo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' | 'header' }) => {
   );
 };
 
+const readStoredJson = <T,>(key: string): T | null => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const item = window.localStorage.getItem(key);
+    return item ? JSON.parse(item) as T : null;
+  } catch (error) {
+    console.warn(`Error reading localStorage key "${key}" for migration:`, error);
+    return null;
+  }
+};
+
+const getMaxPersistedRoundCount = (storedPlayers: Player[] | null, storedRoundSettings: { isDouble: boolean }[] | null) => Math.max(
+  0,
+  ...(storedPlayers ?? []).map(player => Array.isArray(player.scores) ? player.scores.length : 0),
+  storedRoundSettings?.length ?? 0,
+);
+
+const getInitialRoundCount = () => {
+  if (typeof window === 'undefined') return 4;
+  if (window.localStorage.getItem('skru-num-rounds') !== null) return 4;
+
+  const storedGameStarted = readStoredJson<boolean>('skru-game-started');
+  if (!storedGameStarted) return 4;
+
+  const persistedRoundCount = getMaxPersistedRoundCount(
+    readStoredJson<Player[]>('skru-players'),
+    readStoredJson<{ isDouble: boolean }[]>('skru-round-settings'),
+  );
+
+  return persistedRoundCount > 0 ? persistedRoundCount : 4;
+};
+
 export default function App() {
   const [players, setPlayers] = useLocalStorage<Player[]>('skru-players', []);
   const [roundSettings, setRoundSettings] = useLocalStorage<{ isDouble: boolean }[]>('skru-round-settings', []);
-  const [history, setHistory] = useLocalStorage<{ players: Player[]; roundSettings: { isDouble: boolean }[] }[]>('skru-history', []);
+  const [history, setHistory] = useLocalStorage<{ players: Player[]; roundSettings: { isDouble: boolean }[]; numRounds: number }[]>('skru-history', []);
   const [gameStarted, setGameStarted] = useLocalStorage<boolean>('skru-game-started', false);
   const [numPlayers, setNumPlayers] = useLocalStorage<number>('skru-num-players', 2);
+  const [numRounds, setNumRounds] = useLocalStorage<number>('skru-num-rounds', getInitialRoundCount());
   const [isDoubleLastRound, setIsDoubleLastRound] = useLocalStorage<boolean>('skru-double-last', true);
   const [playerNames, setPlayerNames] = useLocalStorage<string[]>('skru-player-names', ['Player 1', 'Player 2', 'Player 3', 'Player 4']);
   const [matches, setMatches] = useLocalStorage<Match[]>('skru-matches', []);
@@ -59,8 +93,51 @@ export default function App() {
     setConfirmModal({ isOpen: true, title, message, onConfirm });
   };
 
+  const getCurrentRoundCount = () => Math.max(numRounds, ...players.map(player => player.scores.length), roundSettings.length);
+
+  const createRoundSettings = (roundCount: number, preserveSettings: { isDouble: boolean }[] = []) => {
+    const settings = Array.from({ length: roundCount }).map((_, i) => ({
+      isDouble: preserveSettings[i]?.isDouble ?? false
+    }));
+
+    if (roundCount > 0 && isDoubleLastRound && preserveSettings.length === 0) {
+      settings[roundCount - 1].isDouble = true;
+    }
+
+    return settings;
+  };
+
+  useEffect(() => {
+    if (!gameStarted || players.length === 0) return;
+
+    const canonicalRoundCount = Math.max(1, getMaxPersistedRoundCount(players, roundSettings), numRounds);
+    const playersNeedMigration = players.some(player => player.scores.length !== canonicalRoundCount);
+    const settingsNeedMigration = roundSettings.length !== canonicalRoundCount;
+    const roundCountNeedsMigration = numRounds !== canonicalRoundCount;
+
+    if (!playersNeedMigration && !settingsNeedMigration && !roundCountNeedsMigration) return;
+
+    if (playersNeedMigration) {
+      setPlayers(prev => prev.map(player => ({
+        ...player,
+        scores: [
+          ...player.scores,
+          ...Array(Math.max(0, canonicalRoundCount - player.scores.length)).fill(0)
+        ]
+      })));
+    }
+
+    if (settingsNeedMigration) {
+      setRoundSettings(createRoundSettings(canonicalRoundCount, roundSettings));
+    }
+
+    if (roundCountNeedsMigration) {
+      setNumRounds(canonicalRoundCount);
+    }
+  }, [gameStarted, players, roundSettings, numRounds]);
+
   const saveToHistory = () => {
-    setHistory(prev => [...prev, JSON.parse(JSON.stringify({ players, roundSettings }))].slice(-50)); // Keep last 50 actions
+    setHistory(prev => [...prev, JSON.parse(JSON.stringify({ players, roundSettings, numRounds: getCurrentRoundCount() }))].slice(-50)); // Keep last 50 actions
   };
 
   const undo = () => {
@@ -68,44 +145,58 @@ export default function App() {
     const previousState = history[history.length - 1];
     setPlayers(previousState.players);
     setRoundSettings(previousState.roundSettings);
+    setNumRounds(previousState.numRounds ?? previousState.players[0]?.scores.length ?? previousState.roundSettings.length ?? numRounds);
     setHistory(prev => prev.slice(0, -1));
   };
 
   const startGame = () => {
+    const roundCount = Math.max(1, numRounds);
     const newPlayers: Player[] = Array.from({ length: numPlayers }).map((_, index) => ({
       id: `p-${index}`,
       name: playerNames[index] || `Player ${index + 1}`,
-      scores: Array(numPlayers).fill(0)
+      scores: Array(roundCount).fill(0)
     }));
     setPlayers(newPlayers);
-    setRoundSettings(Array(numPlayers).fill(null).map((_, i) => ({ 
-      isDouble: i === numPlayers - 1 && isDoubleLastRound
-    })));
+    setRoundSettings(createRoundSettings(roundCount));
+    setNumRounds(roundCount);
     setGameStarted(true);
+  };
+
+  const addRound = () => {
+    saveToHistory();
+    const currentRoundCount = getCurrentRoundCount();
+    const newRoundCount = currentRoundCount + 1;
+    const previousFinalWasDouble = roundSettings[currentRoundCount - 1]?.isDouble ?? false;
+
+    setPlayers(prev => prev.map(p => ({
+      ...p,
+      scores: [...p.scores, ...Array(Math.max(0, newRoundCount - p.scores.length)).fill(0)]
+    })));
+
+    const settings = createRoundSettings(newRoundCount, roundSettings);
+    if (isDoubleLastRound && previousFinalWasDouble) {
+      settings[currentRoundCount - 1].isDouble = false;
+      settings[newRoundCount - 1].isDouble = true;
+    }
+    setRoundSettings(settings);
+
+    setNumRounds(newRoundCount);
   };
 
   const addPlayer = () => {
     saveToHistory();
     const newPlayerCount = players.length + 1;
     
-    // Add player and increase rounds for everyone
+    const roundCount = getCurrentRoundCount();
+
     setPlayers(prev => {
-      const updated = prev.map(p => ({
-        ...p,
-        scores: [...p.scores, 0]
-      }));
       const newPlayer: Player = {
         id: `p-${Date.now()}`,
         name: `Player ${newPlayerCount}`,
-        scores: Array(newPlayerCount).fill(0)
+        scores: Array(roundCount).fill(0)
       };
-      return [...updated, newPlayer];
+      return [...prev, newPlayer];
     });
-
-    // Update round settings: only the new last round is special
-    setRoundSettings(Array(newPlayerCount).fill(null).map((_, i) => ({
-      isDouble: i === newPlayerCount - 1 && isDoubleLastRound
-    })));
   };
 
   const deletePlayer = (playerId: string) => {
@@ -119,22 +210,13 @@ export default function App() {
     }
     showConfirm(
       "Remove Player?",
-      "Are you sure you want to remove this player? The number of rounds will also decrease.",
+      "Are you sure you want to remove this player? Existing round scores will stay intact.",
       () => {
         saveToHistory();
-        const newPlayerCount = players.length - 1;
-        
         setPlayers(prev => {
           const filtered = prev.filter(p => p.id !== playerId);
-          return filtered.map(p => ({
-            ...p,
-            scores: p.scores.slice(0, newPlayerCount)
-          }));
+          return filtered;
         });
-
-        setRoundSettings(Array(newPlayerCount).fill(null).map((_, i) => ({
-          isDouble: i === newPlayerCount - 1 && isDoubleLastRound
-        })));
       }
     );
   };
@@ -205,13 +287,13 @@ export default function App() {
         }, ...prev]);
 
         saveToHistory();
+        const roundCount = getCurrentRoundCount();
         setPlayers(prev => prev.map(p => ({
           ...p,
-          scores: Array(prev.length).fill(0)
+          scores: Array(roundCount).fill(0)
         })));
-        setRoundSettings(Array(players.length).fill(null).map((_, i) => ({ 
-          isDouble: i === players.length - 1 && isDoubleLastRound
-        })));
+        setRoundSettings(prev => createRoundSettings(roundCount, prev));
+        setNumRounds(roundCount);
       }
     );
   };
@@ -277,6 +359,41 @@ export default function App() {
                     {n}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <label htmlFor="round-count" className="text-[10px] font-black text-skru-white/40 uppercase tracking-[0.3em] block text-center">Select Rounds</label>
+              <div className="flex items-center gap-3 bg-skru-black/20 border-4 border-skru-black p-3 md:p-4">
+                <button
+                  type="button"
+                  onClick={() => setNumRounds(prev => Math.max(1, prev - 1))}
+                  className="w-10 h-10 md:w-12 md:h-12 bg-skru-black/40 text-skru-white/60 hover:text-skru-gold border-4 border-skru-black font-black text-2xl leading-none transition-all shadow-[3px_3px_0_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none"
+                  aria-label="Decrease rounds"
+                >
+                  −
+                </button>
+                <div className="flex-1 text-center">
+                  <input
+                    id="round-count"
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    value={numRounds}
+                    onChange={(e) => setNumRounds(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-full bg-transparent text-center text-4xl md:text-5xl font-black text-skru-gold outline-none tabular-nums drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
+                    aria-describedby="round-count-help"
+                  />
+                  <p id="round-count-help" className="text-[8px] md:text-[9px] font-black text-skru-white/40 uppercase tracking-[0.25em] mt-1">Rounds can be more than players</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNumRounds(prev => prev + 1)}
+                  className="w-10 h-10 md:w-12 md:h-12 bg-skru-gold text-skru-black border-4 border-skru-black font-black text-2xl leading-none transition-all shadow-[3px_3px_0_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none"
+                  aria-label="Increase rounds"
+                >
+                  +
+                </button>
               </div>
             </div>
 
@@ -371,6 +488,12 @@ export default function App() {
               <UserPlus className="w-4 h-4 md:w-5 md:h-5 text-skru-gold" /> ADD PLAYER
             </button>
             <button
+              onClick={addRound}
+              className="bg-skru-gold text-skru-black px-3 md:px-6 py-3 rounded-none text-xs md:text-base font-black border-4 border-skru-black hover:bg-yellow-400 transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-[2px_2px_0_rgba(0,0,0,1)]"
+            >
+              <Plus className="w-4 h-4 md:w-5 md:h-5" /> ADD ROUND
+            </button>
+            <button
               onClick={backToMenu}
               className="bg-skru-black/40 text-skru-white px-3 md:px-6 py-3 rounded-none text-xs md:text-base font-black border-4 border-skru-black hover:bg-skru-black/60 transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-[2px_2px_0_rgba(0,0,0,1)]"
               title="Back to Menu"
@@ -391,6 +514,7 @@ export default function App() {
           <div className="p-4 md:p-8 border-b-4 border-skru-black flex items-center gap-3 bg-skru-black/20">
             <History className="text-skru-gold w-5 h-5" />
             <h2 className="text-xs md:text-sm font-black text-skru-white uppercase tracking-[0.3em]">Round History</h2>
+            <span className="ml-auto text-[9px] md:text-[10px] font-black text-skru-gold uppercase tracking-[0.2em]">{getCurrentRoundCount()} Rounds</span>
           </div>
           <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full text-left border-collapse min-w-[600px] md:min-w-full">

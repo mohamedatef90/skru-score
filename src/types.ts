@@ -10,3 +10,8 @@ export interface Match {
   totals: { name: string; score: number }[];
   date: string;
 }
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
