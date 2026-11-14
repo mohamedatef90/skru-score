@@ -93,7 +93,7 @@ Theme colors are defined in `src/index.css`:
 | `skru-black` | `#1A1A1A` | Background |
 | `skru-red` | `#D32F2F` | Danger |
 | `skru-green` | `#4CAF50` | Success |
-| `skru-action` | `#6200EA` | Scrollbar hover |
+| `skru-action` | `#6200EA` | Button and scrollbar hover |
 
 Typography: Montserrat (display), Poppins (body), JetBrains Mono (mono).
 
