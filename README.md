@@ -1,223 +1,109 @@
-# 🎮 Skru Score - قاعدة صحاب
+# Skru Score - قاعدة صحاب
 
-<div align="center">
-
-![Version](https://img.shields.io/badge/version-1.0.0-purple.svg)
-![React](https://img.shields.io/badge/React-19-blue.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+A score-tracking web app for card games, board games, and casual game sessions with friends, with a retro-brutalist dark design.
 
 **الرفيق الرقمي المثالي لتسجيل نقاط الألعاب والجلسات مع الأصدقاء**
 
-[Live Demo](https://skru-score.vercel.app) • [Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation)
+**Live demo:** https://skru-score.vercel.app
 
-</div>
+قاعدة صحاب (Skru Score) تطبيق لتسجيل نقاط ألعاب الورق والألعاب اللوحية والجلسات مع الأصدقاء، بتصميم brutalist عصري وحركات سلسة.
 
----
+## Features
 
-## 📖 **About | عن المشروع**
+**Game setup**
+- Choose 2 to 10 players and edit their names.
+- Choose the number of rounds (minimum 1, default 4). Rounds are independent of the player count.
+- "Double Last Round" option: scores in the final round count twice (x2).
 
-**قاعدة صحاب (Skru Score)** is a modern, beautiful score tracking app designed for card games, board games, and casual gaming sessions with friends. Built with a retro-brutalist aesthetic and smooth animations.
+**During a game**
+- Enter each player's score per round; totals are calculated live, with x2 rounds applied.
+- A crown marks the current leader, the player with the lowest total (lower is better).
+- Add a round, add a player, remove a player (with confirmation), and rename players at any time.
+- Toggle the x2 multiplier on the last round.
+- Undo reverts the last action; the app keeps the last 50 actions.
+- "New Match" saves the winner (lowest total) and every player's total to the match history, then clears the scores and keeps the same players.
+- "Menu" returns to setup after a confirmation.
 
-**قاعدة صحاب** تطبيق عصري وجميل لتسجيل نقاط ألعاب الورق والألعاب اللوحية والجلسات مع الأصدقاء. مبني بتصميم brutalist عصري مع حركات سلسة.
+**Persistence**
+- Players, scores, round settings, undo history, setup choices, and match history are saved automatically in the browser's `localStorage` (keys prefixed `skru-`), so a page reload keeps the session. Nothing is sent to a server.
+- Games saved before configurable rounds existed are migrated to a consistent round count on load.
 
----
+## Tech stack
 
-## ✨ **Features | المميزات**
+- React 19 and TypeScript 5.8
+- Vite 6
+- Tailwind CSS v4 (via `@tailwindcss/vite`)
+- `motion` (Framer Motion) for animation and Lucide React for icons
+- Fonts from Google Fonts: Montserrat, Poppins, JetBrains Mono
+- Playwright for the smoke test script
 
-### 🎯 **Core Features**
-- ✅ **2-10 Players Support** - دعم من 2 إلى 10 لاعبين
-- ✅ **Dynamic Rounds** - عدد الجولات يساوي عدد اللاعبين
-- ✅ **Double Last Round** - ضاعف النقاط في الجولة الأخيرة (اختياري)
-- ✅ **Live Score Calculation** - حساب النقاط مباشرة
-- ✅ **Leader Indicator** - تاج ذهبي للاعب المتصدر
-- ✅ **Undo System** - تراجع عن آخر إجراء (history tracking)
-- ✅ **Match History** - سجل المباريات السابقة
+## Getting started
 
-### 💾 **Persistence**
-- ✅ **Auto-save** - حفظ تلقائي لجميع البيانات
-- ✅ **LocalStorage** - لا يضيع التقدم عند تحديث الصفحة
-- ✅ **Session Continuity** - استمرار الجلسة حتى بعد الإغلاق
-
-### 🎨 **UI/UX**
-- ✅ **Retro-Brutalist Design** - تصميم عصري brutalist
-- ✅ **Smooth Animations** - حركات سلسة (Framer Motion)
-- ✅ **Fully Responsive** - متجاوب تماماً (mobile-first)
-- ✅ **Dark Theme** - ثيم داكن مريح للعين
-- ✅ **Custom Fonts** - خطوط مخصصة (Montserrat, Poppins, JetBrains Mono)
-- ✅ **Confirm Modals** - تأكيدات للإجراءات الحساسة
-
-### 🕹️ **Gameplay**
-- ✅ **Add/Remove Players Mid-Game** - إضافة/إزالة لاعبين أثناء اللعب
-- ✅ **Editable Player Names** - تعديل أسماء اللاعبين
-- ✅ **Score Multipliers** - مضاعفات النقاط (x2 للجولة الأخيرة)
-- ✅ **Winner Detection** - كشف الفائز تلقائياً
-- ✅ **New Match** - بدء مباراة جديدة مع نفس اللاعبين
-
----
-
-## 🎬 **Screenshots | لقطات الشاشة**
-
-### Main Menu | القائمة الرئيسية
-<img src="https://via.placeholder.com/800x450/551A8B/FFB300?text=Main+Menu" alt="Main Menu" width="600">
-
-### Game Board | لوحة اللعب
-<img src="https://via.placeholder.com/800x450/1A1A1A/FFB300?text=Game+Board" alt="Game Board" width="600">
-
-### Match History | سجل المباريات
-<img src="https://via.placeholder.com/800x450/551A8B/FFB300?text=Match+History" alt="Match History" width="600">
-
----
-
-## 🛠️ **Tech Stack | التقنيات المستخدمة**
-
-| Category | Technologies |
-|----------|-------------|
-| **Frontend** | React 19, TypeScript 5.8 |
-| **Build Tool** | Vite 6.2 |
-| **Styling** | Tailwind CSS v4 |
-| **Animations** | Framer Motion (motion) 12.38 |
-| **Icons** | Lucide React |
-| **Storage** | LocalStorage (persistent) |
-| **Deployment** | Vercel |
-
----
-
-## 🚀 **Installation | التثبيت**
-
-### Prerequisites | المتطلبات
-- Node.js 18+ 
-- npm or yarn
-
-### Setup | الإعداد
+Prerequisites: Node.js and npm.
 
 ```bash
-# 1. Clone the repository | استنساخ المشروع
 git clone https://github.com/mohamedatef90/skru-score.git
 cd skru-score
-
-# 2. Install dependencies | تثبيت المكتبات
 npm install
-
-# 3. Run development server | تشغيل السيرفر
 npm run dev
-
-# 4. Open browser | افتح المتصفح
-# http://localhost:3000
 ```
 
-### Build for Production | بناء النسخة النهائية
+The dev server runs on http://localhost:3000 (`vite --port=3000 --host=0.0.0.0`).
 
-```bash
-npm run build
-npm run preview
-```
+### Scripts
 
----
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the dev server on port 3000 |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Type-check with `tsc --noEmit` |
+| `npm run clean` | Remove `dist/` |
+| `npm run smoke:rounds` | Playwright browser smoke test for rounds, add round/player, reload persistence, new match, and legacy-data migration |
 
-## 🎮 **How to Play | كيفية اللعب**
+`npm run smoke:rounds` drives a running app: start `npm run dev` first. It uses `http://127.0.0.1:3000/` unless `SKRU_BASE_URL` is set, and needs a Playwright browser installed. It prints `SKRU_ROUNDS_SMOKE_PASS` on success.
 
-### 1️⃣ **Setup | الإعداد**
-1. اختر عدد اللاعبين (2-10)
-2. أدخل أسماء اللاعبين
-3. فعّل "Double Last Round" إذا كنت تريد مضاعفة الجولة الأخيرة
-4. اضغط "INITIALIZE GAME"
+### Environment variables
 
-### 2️⃣ **During Game | أثناء اللعب**
-1. أدخل نقاط كل لاعب في كل جولة
-2. النقاط تُحسب تلقائياً
-3. التاج يظهر على اللاعب المتصدر (الأقل نقاطاً)
-4. يمكنك:
-   - **UNDO** - التراجع عن آخر إجراء
-   - **ADD PLAYER** - إضافة لاعب جديد
-   - **MENU** - العودة للقائمة
-   - **NEW MATCH** - بدء مباراة جديدة
+None are required to run the app. `GEMINI_API_KEY` is read by `vite.config.ts` and `src/services/geminiService.ts` (a Gemini chat helper for Skru rules and strategy), but no screen in the app uses that helper.
 
-### 3️⃣ **End Game | نهاية اللعب**
-- اضغط "NEW MATCH" لحفظ النتائج وبدء مباراة جديدة
-- سيُحفظ الفائز ونقاط الجميع في سجل المباريات
-
----
-
-## 🏗️ **Project Structure | بنية المشروع**
+## Project structure
 
 ```
-skru-score/
-├── src/
-│   ├── hooks/
-│   │   └── useLocalStorage.ts   # LocalStorage hook
-│   ├── App.tsx                   # Main component
-│   ├── types.ts                  # TypeScript types
-│   ├── index.css                 # Global styles
-│   └── main.tsx                  # Entry point
-├── public/
-│   └── (static assets)
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-└── README.md
+src/
+  App.tsx                     Setup screen, scoreboard, match history, confirm modal
+  main.tsx                    Entry point
+  types.ts                    Player, Match, and ChatMessage types
+  index.css                   Tailwind theme (colors, fonts) and custom styles
+  hooks/useLocalStorage.ts    localStorage-backed state hook
+  services/geminiService.ts   Gemini chat helper (not used by the UI)
+scripts/smoke-rounds.mjs      Playwright smoke test
+index.html, vite.config.ts, tsconfig.json, package.json
 ```
 
----
+## Design
 
-## 🎨 **Design System | نظام التصميم**
+Theme colors are defined in `src/index.css`:
 
-### Colors | الألوان
-```css
---color-skru-purple: #551A8B  /* Primary */
---color-skru-gold: #FFB300    /* Accent */
---color-skru-white: #F0F0F0   /* Text */
---color-skru-black: #1A1A1A   /* Background */
---color-skru-red: #D32F2F     /* Danger */
---color-skru-green: #4CAF50   /* Success */
-```
+| Token | Value | Use |
+| --- | --- | --- |
+| `skru-purple` | `#551A8B` | Primary |
+| `skru-gold` | `#FFB300` | Accent |
+| `skru-white` | `#F0F0F0` | Text |
+| `skru-black` | `#1A1A1A` | Background |
+| `skru-red` | `#D32F2F` | Danger |
+| `skru-green` | `#4CAF50` | Success |
+| `skru-action` | `#6200EA` | Scrollbar hover |
 
-### Typography | الخطوط
-- **Display:** Montserrat (700, 800, 900)
-- **Body:** Poppins (400, 500, 600)
-- **Mono:** JetBrains Mono (700)
+Typography: Montserrat (display), Poppins (body), JetBrains Mono (mono).
 
-### Spacing | المسافات
-- Grid: 8px base unit
-- Borders: 4px brutalist style
-- Shadows: 8px 3D effect
+## Author
 
----
-
-## 📝 **License | الترخيص**
-
-MIT License - أنت حر في استخدام وتعديل وتوزيع المشروع.
-
----
-
-## 👨‍💻 **Author | المطور**
-
-**Mohamed Atef (Tifo)**  
+Mohamed Atef (Tifo)
 - GitHub: [@mohamedatef90](https://github.com/mohamedatef90)
 - Email: matefm20@gmail.com
+- Issues: https://github.com/mohamedatef90/skru-score/issues
 
----
+## Acknowledgments
 
-## 🙏 **Acknowledgments | شكر وتقدير**
-
-- **برعاية ابو الميكا وصحبته الرايقة** 🎮
-- Inspired by card game sessions with friends
-- Built with ❤️ for the gaming community
-
----
-
-## 🔗 **Links | الروابط**
-
-- **Live Demo:** [skru-score.vercel.app](https://skru-score.vercel.app)
-- **GitHub:** [github.com/mohamedatef90/skru-score](https://github.com/mohamedatef90/skru-score)
-- **Report Bug:** [Open an issue](https://github.com/mohamedatef90/skru-score/issues)
-
----
-
-<div align="center">
-
-**Made with ❤️ and ☕ by Mohamed Atef**
-
-⭐ Star this repo if you find it useful!
-
-</div>
+برعاية ابو الميكا وصحبته الرايقة. Inspired by card game sessions with friends.
